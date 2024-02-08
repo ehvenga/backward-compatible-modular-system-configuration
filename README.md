@@ -17,6 +17,11 @@ Modularization is a key strategy in product design and system configuration, ena
 
 1. Clone the repository: `git clone https://github.com/your-username/modular-system-configuration.git`
 
+## Data Set
+
+1. Optimality Test Data: Datasets to assess the algorithm's solution optimality.
+2. Scalability Test Data: Datasets for evaluating the algorithm's performance with larger-scale problems.
+
 ---
 
 Enjoy optimizing your system configurations with our dynamic programming solution! If you have any questions or feedback, please don't hesitate to reach out.
