@@ -8,8 +8,9 @@ export function Home() {
           Choose Strategy
         </p>
         <div className='w-full flex justify-center gap-x-10'>
-          <MainButton buttonName='Dynamic Programming' />
-          <MainButton buttonName='Brute Force' />
+          <MainButton buttonName='Dynamic Programming' value='dp' />
+          <MainButton buttonName='Brute Force' value='bf' />
+          <MainButton buttonName='Compare' value='cp' />
         </div>
       </div>
     </main>
