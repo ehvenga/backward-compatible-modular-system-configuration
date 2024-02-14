@@ -9,7 +9,7 @@ import DesignConfig from '@/components/designConfig';
 export function Home() {
   const [strategyChoice, setStrategyChoice] = useAtom(strategyChoiceAtom);
   return (
-    <main className='flex w-full'>
+    <main className='flex w-full flex-wrap'>
       <div className='flex flex-col w-full justify-center'>
         <p className='w-full flex justify-center text-lg pb-3'>
           Choose Strategy
