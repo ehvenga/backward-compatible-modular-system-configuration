@@ -3,10 +3,9 @@
 import MainButton from '@/components/mainButton';
 import { strategyChoiceAtom } from '@/components/atoms';
 import { useAtom } from 'jotai';
-import { StrategyChoices } from '@/components/atoms';
 import DesignConfig from '@/components/designConfig';
 
-export function Home() {
+const Home = () => {
   const [strategyChoice, setStrategyChoice] = useAtom(strategyChoiceAtom);
   return (
     <main className='flex w-full flex-wrap'>
@@ -35,6 +34,6 @@ export function Home() {
       <DesignConfig />
     </main>
   );
-}
+};
 
 export default Home;
