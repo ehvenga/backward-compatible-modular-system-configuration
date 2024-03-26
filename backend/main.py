@@ -6,10 +6,10 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 DATABASE_URL = "mysql://root:wag0nrM$@localhost/cs591"
 database = Database(DATABASE_URL)
 
-engine = create_async_engine(DATABASE_URL, echo=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
+# engine = create_async_engine(DATABASE_URL, echo=True)
+# SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
 
-Base = declarative_base()
+# Base = declarative_base()
 
 app = FastAPI()
 
