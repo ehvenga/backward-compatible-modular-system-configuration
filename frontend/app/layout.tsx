@@ -18,7 +18,9 @@ export default function RootLayout({
     <html lang='en'>
       <body className={inter.className}>
         <div className='px-24 py-8'>
-          <h1 className='text-xl font-semibold'>Configuration Tool</h1>
+          <h1 className='text-2xl font-semibold pb-4 border-b-2'>
+            Interactive Configuration Tool
+          </h1>
           {children}
         </div>
       </body>

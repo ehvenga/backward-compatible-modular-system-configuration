@@ -27,7 +27,9 @@ export default function Home() {
   const [initialParameter, setInitialParameter] = useState('');
   const [goalParameter, setGoalParameter] = useState('');
   const [parameterChain, setParameterChain] = useState([]);
+  const [partsChain, setPartsChain] = useState([]);
   const [noSolution, setNoSolution] = useState(false);
+  const [partsOptions, setPartsOptions] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -43,7 +45,12 @@ export default function Home() {
     }
   };
 
-  const submitSelection = async () => {
+  const submitSelection = () => {
+    handleFindParameterChain();
+    handleFindPartsChain();
+  };
+
+  const handleFindParameterChain = async () => {
     setParameterChain([]);
     setNoSolution(false);
     try {
@@ -82,65 +89,142 @@ export default function Home() {
     }
   };
 
+  const handleFindPartsChain = async () => {
+    setPartsChain([]);
+    // setNoSolution(false);
+    try {
+      const response = await fetch(
+        'http://localhost:8000/api/find-webservices/',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            initialParameter,
+            goalParameter,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorResponse = await response.text(); // Get the response text
+        throw new Error(errorResponse);
+      }
+
+      const jsonData = await response.json();
+      console.log('Submission response: ', jsonData.webServiceChain);
+      setPartsChain(jsonData.webServiceChain);
+    } catch (error) {
+      console.error('Error submitting selection: ', error);
+      // if (
+      //   error.message.includes('No path found from initial to goal parameter.')
+      // ) {
+      //   console.log(
+      //     'Specific Error: No path found from initial to goal parameter.'
+      //   );
+      //   setNoSolution(true);
+      // }
+    }
+  };
+
   return (
     <main className='mt-6'>
-      <div className='flex flex-col gap-6'>
-        <Select onValueChange={setInitialParameter}>
-          <SelectTrigger className='w-full'>
-            <SelectValue placeholder='Select Initial Parameter' />
-          </SelectTrigger>
-          <SelectContent>
-            {parameterList.map((parameter, index) => (
-              <SelectItem key={index} value={parameter.parameterid}>
-                {parameter.parametername}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className='w-full'>
+        <Card>
+          <CardHeader>
+            <CardTitle className='text-xl'>Select Interfaces</CardTitle>
+          </CardHeader>
+          <CardContent className='flex flex-col gap-4'>
+            <Select onValueChange={setInitialParameter}>
+              <SelectTrigger className='w-full'>
+                <SelectValue placeholder='Select Initial Parameter' />
+              </SelectTrigger>
+              <SelectContent>
+                {parameterList.map((parameter, index) => (
+                  <SelectItem key={index} value={parameter.parameterid}>
+                    {parameter.parametername}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <Select onValueChange={setGoalParameter}>
-          <SelectTrigger className='w-full'>
-            <SelectValue placeholder='Select Goal Parameter' />
-          </SelectTrigger>
-          <SelectContent>
-            {parameterList.map((parameter, index) => (
-              <SelectItem key={index} value={parameter.parameterid}>
-                {parameter.parametername}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <Select onValueChange={setGoalParameter}>
+              <SelectTrigger className='w-full'>
+                <SelectValue placeholder='Select Goal Parameter' />
+              </SelectTrigger>
+              <SelectContent>
+                {parameterList.map((parameter, index) => (
+                  <SelectItem key={index} value={parameter.parameterid}>
+                    {parameter.parametername}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <div className='w-full flex gap-6'>
-          <Button
-            variant='outline'
-            className='w-60 bg-gray-50'
-            onClick={submitSelection}
-          >
-            + Add Intermediate Parameter
-          </Button>
-          <Button
-            variant='outline'
-            className='w-40 bg-green-50'
-            onClick={submitSelection}
-          >
-            Submit
-          </Button>
-        </div>
+            <div className='w-full flex gap-6'>
+              {/* <Button
+                variant='outline'
+                className='w-60 bg-gray-50'
+                onClick={submitSelection}
+              >
+                + Add Intermediate Parameter
+              </Button> */}
+              <Button
+                variant='outline'
+                className='w-60 bg-green-50'
+                onClick={submitSelection}
+              >
+                Submit
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {parameterChain?.length > 0 && (
-          <Card>
+          <Card className='mt-6'>
             <CardHeader>
-              <CardTitle>Hierarchy Solution</CardTitle>
+              <CardTitle className='text-xl border-b pb-2'>Solution</CardTitle>
             </CardHeader>
-            <CardContent className='flex gap-4'>
-              {parameterChain.map((parameter, index) => (
-                <>
-                  {index > 0 && <>-&gt;</>}
-                  <p>{parameter}</p>
-                </>
-              ))}
+            <CardContent className='flex flex-col'>
+              <h2 className='font-medium text-xl w-full'>
+                Parameters Solution
+              </h2>
+              <div className='flex gap-4 mt-4 items-center'>
+                {parameterChain.map((parameter, index) => (
+                  <>
+                    {index > 0 && <>-&gt;</>}
+                    <p className='p-3 w-20 border text-center rounded'>
+                      {parameter}
+                    </p>
+                  </>
+                ))}
+              </div>
             </CardContent>
+            {partsChain?.length > 0 && (
+              <CardContent className='flex flex-col gap-4 w-full'>
+                <h2 className='font-medium text-xl w-full'>Parts Solution</h2>
+                <div className='flex items-center gap-4'>
+                  {partsChain.map((part, index) => (
+                    <>
+                      {index > 0 && <>-&gt;</>}
+                      <Select>
+                        <SelectTrigger className='w-60 h-20 flex gap-x-2 justify-center items-center hover:border-2'>
+                          <SelectValue placeholder={part} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {partsOptions.map((options, index) => (
+                            <SelectItem key={index} value={options}>
+                              {part}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </>
+                  ))}
+                </div>
+              </CardContent>
+            )}
           </Card>
         )}
       </div>
