@@ -199,11 +199,16 @@ export default function Home() {
   };
 
   return (
-    <main className='mt-6'>
+    <main className='mt-2'>
+      <h1 className='text-3xl font-semibold text-white pb-4'>
+        Interactive Configuration Tool
+      </h1>
       <div className='w-full'>
-        <Card>
+        <Card className='relative bg-white shadow-lg sm:rounded-3xl p-6 bg-clip-padding bg-opacity-80 border border-gray-100'>
           <CardHeader>
-            <CardTitle className='text-xl'>Select Interfaces</CardTitle>
+            <CardTitle className='text-2xl border-b border-slate-400'>
+              Select Interfaces
+            </CardTitle>
           </CardHeader>
           <CardContent className='flex flex-col gap-5'>
             <div>
@@ -268,7 +273,7 @@ export default function Home() {
               </Button> */}
               <Button
                 variant='outline'
-                className='w-60 bg-green-50 disabled:bg-slate-50'
+                className='w-60 disabled:bg-opacity-20 text-md'
                 onClick={submitSelection}
                 disabled={submitDisabled}
               >
@@ -277,9 +282,11 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
-        <Card className='mt-6'>
+        <Card className='mt-6 relative bg-white shadow-lg sm:rounded-3xl p-6 bg-clip-padding bg-opacity-80 border border-gray-100'>
           <CardHeader>
-            <CardTitle className='text-xl border-b pb-2'>Solution</CardTitle>
+            <CardTitle className='pb-2 text-2xl border-b border-slate-400'>
+              Solution
+            </CardTitle>
           </CardHeader>
           {parameterChain?.length > 0 && (
             <CardContent className='flex flex-col'>
