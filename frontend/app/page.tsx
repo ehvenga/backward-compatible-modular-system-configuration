@@ -27,14 +27,16 @@ export default function Home() {
   const [parameterList, setParameterList] = useState([]);
   const [initialParameters, setInitialParameters] = useState('');
   const [goalParameters, setGoalParameters] = useState('');
-  const [parameterChain, setParameterChain] = useState([]);
-  const [partsChain, setPartsChain] = useState([]);
+  const [partsChainList, setPartsChainList] = useState([]);
   const [noSolution, setNoSolution] = useState(false);
   const [partsOptions, setPartsOptions] = useState([]);
   const [submitDisabled, setSubmitDisabled] = useState(true);
   const [servicesChain, setServicesChain] = useState([]);
   const [initialParamValuesList, setInitialParamValuesList] = useState([]);
   const [goalParamValuesList, setGoalParamValuesList] = useState([]);
+  const [partsChain, setPartsChain] = useState([]);
+  const [chainChoice, setChainChoice] = useState(0);
+  const [parameterChain, setParameterChain] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -45,6 +47,19 @@ export default function Home() {
       ? setSubmitDisabled(false)
       : setSubmitDisabled(true);
   }, [goalParameters, initialParameters]);
+
+  useEffect(() => {
+    if (partsChainList.length > 0) {
+      const selected = partsChainList[chainChoice];
+      const webservicesList = selected.map((innerArray) => innerArray[0]);
+      const parametersList = selected.map((innerArray) => innerArray[1]);
+      const firstEntries = partsChainList.map((item) => item[0][0]);
+      console.log('vals', firstEntries);
+      setPartsChain(webservicesList);
+      setPartsOptions(firstEntries);
+      setParameterChain(parametersList);
+    }
+  }, [partsChainList, chainChoice]);
 
   const fetchData = async () => {
     try {
@@ -63,8 +78,8 @@ export default function Home() {
   const submitSelection = () => {
     // setPartsChain([]);
     // handleFindParameterChain();
-    handleFindPartsChain();
-    // handleFindServicesChain();
+    // handleFindPartsChain();
+    handleFindServicesChain();
   };
 
   const handleFindParameterChain = async () => {
@@ -152,7 +167,7 @@ export default function Home() {
     // setNoSolution(false);
     try {
       const response = await fetch(
-        'http://localhost:8000/api/find-webservices-paths/',
+        'http://localhost:8000/api/find-webchains-v2/',
         {
           method: 'POST',
           headers: {
@@ -171,7 +186,8 @@ export default function Home() {
       }
 
       const jsonData = await response.json();
-      console.log('Submission response: ', jsonData.webServiceChain);
+      // console.log('Submission response: ', jsonData.webServiceChains);
+      setPartsChainList(jsonData.webServiceChains);
       // setPartsChain(jsonData.webServiceChain);
     } catch (error) {
       console.error('Error submitting selection: ', error);
@@ -196,6 +212,15 @@ export default function Home() {
     setGoalParameters(selectedOptions);
     const listGoal = selectedOptions.map((item) => item.value);
     setGoalParamValuesList(listGoal);
+  };
+
+  const handleChainChoice = (newValue) => {
+    const selectedIndex = partsOptions.findIndex(
+      (option) => option === newValue
+    );
+    console.log('Selected index:', selectedIndex);
+    console.log(selectedIndex);
+    setChainChoice(selectedIndex);
   };
 
   return (
@@ -282,54 +307,57 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
-        <Card className='mt-6 relative bg-white shadow-lg sm:rounded-3xl p-6 bg-clip-padding bg-opacity-80 border border-gray-100'>
-          <CardHeader>
-            <CardTitle className='pb-2 text-2xl border-b border-slate-400'>
-              Solution
-            </CardTitle>
-          </CardHeader>
-          {parameterChain?.length > 0 && (
-            <CardContent className='flex flex-col'>
+        {partsChainList?.length > 0 && (
+          <Card className='mt-6 relative bg-white shadow-lg sm:rounded-3xl p-6 bg-clip-padding bg-opacity-80 border border-gray-100'>
+            <CardHeader>
+              <CardTitle className='pb-2 text-2xl border-b border-slate-400'>
+                Solution
+              </CardTitle>
+            </CardHeader>
+
+            {/* <CardContent className='flex flex-col'>
               <h2 className='font-medium text-xl w-full'>
                 Parameters Solution
               </h2>
-              <div className='flex gap-4 mt-4 items-center'>
-                {parameterChain.map((parameter, index) => (
-                  <>
-                    {index > 0 && <>-&gt;</>}
-                    <p className='p-3 w-20 border text-center rounded'>
-                      {parameter}
-                    </p>
-                  </>
-                ))}
-              </div>
-            </CardContent>
-          )}
-          {partsChain?.length > 0 && (
-            <CardContent className='flex flex-col gap-4 w-full'>
-              <h2 className='font-medium text-xl w-full'>Parts Solution</h2>
-              <div className='flex items-center gap-4'>
-                {partsChain.map((part, index) => (
-                  <>
-                    {index > 0 && <>-&gt;</>}
-                    <Selectcn>
-                      <SelectTrigger className='w-60 h-20 flex gap-x-2 justify-center items-center hover:border-2'>
-                        <SelectValue placeholder={part} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {partsOptions.map((options, index) => (
-                          <SelectItem key={index} value={options}>
-                            {part}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Selectcn>
-                  </>
-                ))}
-              </div>
-            </CardContent>
-          )}
-        </Card>
+            </CardContent> */}
+
+            {partsChainList?.length > 0 && (
+              <CardContent className='flex flex-col gap-4 w-full'>
+                <h2 className='font-medium text-xl w-full'>Parts Solution</h2>
+                <div className='flex items-center gap-4'>
+                  {partsChain.map((part, index) => (
+                    <>
+                      {index > 0 && <>-&gt;</>}
+                      <Selectcn onValueChange={handleChainChoice}>
+                        <SelectTrigger className='w-60 h-20 flex gap-x-2 justify-center items-center hover:border-2'>
+                          <div className='flex flex-col'>
+                            <div className='font-semibold text-lg'>
+                              Product{index + 1}:
+                            </div>
+                            <SelectValue placeholder={part} />
+                            <div className='mt-1 flex gap-x-2 text-xs'>
+                              <p className='font-semibold'>
+                                Outward Interface:
+                              </p>
+                              {parameterChain[index]}
+                            </div>
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {partsOptions.map((options, index) => (
+                            <SelectItem key={index} value={options}>
+                              {options}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Selectcn>
+                    </>
+                  ))}
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        )}
       </div>
 
       {noSolution && (
