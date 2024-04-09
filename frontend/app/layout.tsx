@@ -19,10 +19,12 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <body className={inter.className}>
-        <BackgroundGradientAnimation>
+        {/* <BackgroundGradientAnimation> */}
+        <div className='bg-gradient-to-b from-purple-900 to-purple-700 min-h-screen h-full'>
           <Navbar />
           <div className='px-24 py-8'>{children}</div>
-        </BackgroundGradientAnimation>
+        </div>
+        {/* </BackgroundGradientAnimation> */}
       </body>
     </html>
   );

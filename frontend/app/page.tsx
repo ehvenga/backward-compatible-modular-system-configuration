@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Select from 'react-select';
 import { Select as Selectcn } from '@/components/ui/select';
+import Diagram from '@/components/ui/diagram';
 
 import {
   SelectContent,
@@ -49,7 +50,7 @@ export default function Home() {
   }, [goalParameters, initialParameters]);
 
   useEffect(() => {
-    if (partsChainList.length > 0) {
+    if (partsChainList?.length > 0) {
       const selected = partsChainList[chainChoice];
       const webservicesList = selected.map((innerArray) => innerArray[0]);
       const parametersList = selected.map((innerArray) => innerArray[1]);
@@ -167,7 +168,7 @@ export default function Home() {
     // setNoSolution(false);
     try {
       const response = await fetch(
-        'http://localhost:8000/api/find-webchains-v2/',
+        'http://localhost:8000/api/find-webchains-v3/',
         {
           method: 'POST',
           headers: {
@@ -187,7 +188,7 @@ export default function Home() {
 
       const jsonData = await response.json();
       // console.log('Submission response: ', jsonData.webServiceChains);
-      setPartsChainList(jsonData.webServiceChains);
+      setPartsChainList(jsonData.stages);
       // setPartsChain(jsonData.webServiceChain);
     } catch (error) {
       console.error('Error submitting selection: ', error);
@@ -324,8 +325,27 @@ export default function Home() {
             {partsChainList?.length > 0 && (
               <CardContent className='flex flex-col gap-4 w-full'>
                 <h2 className='font-medium text-xl w-full'>Parts Solution</h2>
-                <div className='flex items-center gap-4'>
-                  {partsChain.map((part, index) => (
+                <div className='flex items-center gap-4 w-full flex-col'>
+                  {partsChainList.map((part, index) => (
+                    <div
+                      className='flex w-full border border-purple-800 p-4 rounded'
+                      key={index}
+                    >
+                      <p className='mr-10 w-40 font-medium'>
+                        Stage {index + 1}
+                      </p>
+                      <div className='flex justify-between'>
+                        {/* @ts-ignore */}
+                        {part.map((item, idx) => (
+                          <div className='w-20' key={idx}>
+                            {item}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  {/* <Diagram /> */}
+                  {/* {partsChainList.map((part, index) => (
                     <>
                       {index > 0 && <>-&gt;</>}
                       <Selectcn onValueChange={handleChainChoice}>
@@ -352,7 +372,7 @@ export default function Home() {
                         </SelectContent>
                       </Selectcn>
                     </>
-                  ))}
+                  ))} */}
                 </div>
               </CardContent>
             )}
