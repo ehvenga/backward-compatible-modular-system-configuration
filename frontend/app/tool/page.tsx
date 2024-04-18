@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useEffect, useState } from 'react';
+import PartsDisplay from '@/components/ui/partsDisplay';
 
 export default function ToolPage() {
   const [parameterList, setParameterList] = useState([]);
@@ -24,6 +25,7 @@ export default function ToolPage() {
     []
   );
   const [partsChainList, setPartsChainList] = useState([]);
+  const [groupedPartsChainList, setGroupedPartsChainList] = useState([]);
   const [noSolution, setNoSolution] = useState(false);
   const [submitDisabled, setSubmitDisabled] = useState(false);
 
@@ -44,10 +46,9 @@ export default function ToolPage() {
     try {
       const response = await fetch('http://localhost:8000/api/parameters/');
       const jsonData = await response.json();
-      console.log(jsonData);
       let convertedList = jsonData.map((item) => ({
-        value: item.parameterid,
-        label: item.parametername,
+        value: item.parameterId,
+        label: item.parameterName,
       }));
       convertedList = convertedList
         .reduce(
@@ -140,6 +141,14 @@ export default function ToolPage() {
     handleFindServicesChain();
   };
 
+  const handleComposeByPrice = () => {
+    handleFindServicesChainByPrice();
+  };
+
+  const handleComposeByReputation = () => {
+    handleFindServicesChain();
+  };
+
   const handleFindServicesChain = async () => {
     // setPartsChain([]);
     setNoSolution(false);
@@ -147,7 +156,7 @@ export default function ToolPage() {
     const listGoal = selectedGoalParameterList.map((item) => item.value);
     try {
       const response = await fetch(
-        'http://localhost:8000/api/find-webchains-v3/',
+        'http://localhost:8000/api/find-parts-chain/',
         {
           method: 'POST',
           headers: {
@@ -167,9 +176,55 @@ export default function ToolPage() {
 
       const jsonData = await response.json();
       // console.log('Submission response: ', jsonData.webServiceChains);
-      // const newArrays = getRandomSubsets(jsonData.stages, 20);
-      if (jsonData.stages[0].length > 0) {
-        setPartsChainList(jsonData.stages);
+      // const newArrays = getRandomSubsets(jsonData.paths, 20);
+      if (jsonData.paths.length > 0) {
+        const groupedList = groupAndStagePaths(jsonData);
+        // console.log('log', groupedList);
+        setPartsChainList(jsonData.paths);
+        setGroupedPartsChainList(groupedList);
+      } else {
+        setNoSolution(true);
+      }
+      // setPartsChain(jsonData.webServiceChain);
+    } catch (error) {
+      console.error('Error submitting selection: ', error);
+      setNoSolution(true);
+    }
+  };
+
+  const handleFindServicesChainByPrice = async () => {
+    // setPartsChain([]);
+    setNoSolution(false);
+    const listInitial = selectedInitialParameterList.map((item) => item.value);
+    const listGoal = selectedGoalParameterList.map((item) => item.value);
+    try {
+      const response = await fetch(
+        'http://localhost:8000/api/find-parts-chain-by-price/',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            initialParameters: listInitial,
+            goalParameters: listGoal,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorResponse = await response.text(); // Get the response text
+        throw new Error(errorResponse);
+      }
+
+      const jsonData = await response.json();
+      // console.log('Submission response: ', jsonData.webServiceChains);
+      // const newArrays = getRandomSubsets(jsonData.paths, 20);
+      if (jsonData.paths.length > 0) {
+        const groupedList = groupAndStagePaths(jsonData);
+        // console.log('log', groupedList);
+        setPartsChainList(jsonData.paths);
+        setGroupedPartsChainList(groupedList);
       } else {
         setNoSolution(true);
       }
@@ -181,7 +236,7 @@ export default function ToolPage() {
   };
 
   const handleChooseService = (parts, item) => {
-    console.log(parts, item);
+    // console.log(parts, item);
     // setShowPartsOptions(true);
   };
 
@@ -224,6 +279,61 @@ export default function ToolPage() {
       return shuffled.slice(0, newSize);
     });
   };
+
+  function groupAndStagePaths(data) {
+    if (!data || !Array.isArray(data.paths)) {
+      throw new Error(
+        "Invalid input: data must have a 'paths' array property."
+      );
+    }
+
+    // Step 1: Group paths by parameters
+    const grouped = data.paths.reduce((acc, path) => {
+      const key = path.parameters.join(','); // Create a string key from parameters for easier comparison
+      if (!acc[key]) {
+        acc[key] = {
+          parameters: path.parameters,
+          parts: [...path.parts],
+          lastParameter: path.parameters[path.parameters.length - 1],
+          firstParameter: path.parameters[0],
+        };
+      } else {
+        acc[key].parts.push(...path.parts);
+      }
+      return acc;
+    }, {});
+
+    // Convert the dictionary back to array and initialize stages
+    const groupedArray = Object.values(grouped);
+    const stages = {};
+
+    // Step 2: Define stages
+    groupedArray.forEach((group) => {
+      // Determine the stage for each group
+      let stageFound = false;
+      for (let stage in stages) {
+        // Check if this group can be a continuation in the current stage
+        stages[stage].some((existingGroup) => {
+          if (existingGroup.lastParameter === group.firstParameter) {
+            // If current group starts where previous one ended, it's the next stage
+            if (!stages[parseInt(stage) + 1]) stages[parseInt(stage) + 1] = [];
+            stages[parseInt(stage) + 1].push(group);
+            stageFound = true;
+            return true;
+          }
+          return false;
+        });
+      }
+
+      // If no stage continuation found, it starts a new stage 0 or remains at stage 0
+      if (!stageFound) {
+        if (!stages[0]) stages[0] = [];
+        stages[0].push(group);
+      }
+    });
+
+    return stages;
+  }
 
   let productCounter = 0;
 
@@ -359,6 +469,22 @@ export default function ToolPage() {
             >
               Compose
             </Button>
+            <Button
+              variant='outline'
+              className='w-60 disabled:bg-opacity-20 text-md'
+              onClick={handleComposeByPrice}
+              disabled={submitDisabled}
+            >
+              Compose by Price
+            </Button>
+            <Button
+              variant='outline'
+              className='w-60 disabled:bg-opacity-20 text-md'
+              onClick={handleComposeByReputation}
+              disabled={submitDisabled}
+            >
+              Compose by Reputation
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -375,62 +501,72 @@ export default function ToolPage() {
         </>
       ) : (
         <div>
-          {partsChainList?.length > 0 && (
-            <Card className='mt-6 relative bg-white shadow-lg sm:rounded-3xl p-6 bg-clip-padding bg-opacity-80 border border-gray-100'>
-              <CardHeader>
-                <CardTitle className='pb-2 text-2xl border-b border-slate-400'>
-                  Solution
-                </CardTitle>
-              </CardHeader>
-
-              {/* <CardContent className='flex flex-col'>
-              <h2 className='font-medium text-xl w-full'>
-                Parameters Solution
-              </h2>
-            </CardContent> */}
-
-              {partsChainList?.length > 0 && (
-                <CardContent className='flex flex-col gap-4 w-full'>
-                  <h2 className='font-medium text-xl w-full'>Parts Solution</h2>
-                  <div className='flex items-center gap-4 w-full flex-col'>
-                    {partsChainList.map((part, index) => (
-                      <div
-                        className='flex w-full border border-purple-800 p-4 rounded'
-                        key={index}
-                      >
-                        <p className='mr-10 w-40 font-medium my-5'>
-                          Stage {index + 1}
-                        </p>
-                        <div className='flex flex-wrap gap-y-2 gap-x-2 justify-between'>
-                          {part.map((item, idx) => {
-                            productCounter += 1; // Increment the counter for each product
-                            return (
-                              <div
-                                className='flex items-center justify-center py-3 px-4 border border-purple-600 rounded hover:cursor-pointer hover:bg-purple-100'
-                                key={idx}
-                                onClick={() =>
-                                  handleChooseService(partsChainList, index)
-                                }
-                              >
-                                <div className='flex items-center justify-center flex-col'>
-                                  {/* Use the persistent counter for numbering */}
-                                  <p className='font-semibold'>
-                                    Product {productCounter}
-                                  </p>
-                                  <p>{item}</p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          )}
+          <PartsDisplay
+            groupedPartsChainList={groupedPartsChainList}
+            parameterList={parameterList}
+          />
+          {/* {groupedPartsChainList.map((chain, index) => (
+            <>{console.log(index)}</>
+          ))} */}
         </div>
+
+        // <div>
+        //   {partsChainList?.length > 0 && (
+        //     <Card className='mt-6 relative bg-white shadow-lg sm:rounded-3xl p-6 bg-clip-padding bg-opacity-80 border border-gray-100'>
+        //       <CardHeader>
+        //         <CardTitle className='pb-2 text-2xl border-b border-slate-400'>
+        //           Solution
+        //         </CardTitle>
+        //       </CardHeader>
+
+        //       {/* <CardContent className='flex flex-col'>
+        //       <h2 className='font-medium text-xl w-full'>
+        //         Parameters Solution
+        //       </h2>
+        //     </CardContent> */}
+
+        //       {groupedPartsChainList?.length > 0 && (
+        //         <CardContent className='flex flex-col gap-4 w-full'>
+        //           <h2 className='font-medium text-xl w-full'>Parts Solution</h2>
+        //           <div className='flex items-center gap-4 w-full flex-col'>
+        //             {groupedPartsChainList.map((part, index) => (
+        //               <div
+        //                 className='flex w-full border border-purple-800 p-4 rounded'
+        //                 key={index}
+        //               >
+        //                 <p className='mr-10 w-40 font-medium my-5'>
+        //                   Stage {index + 1}
+        //                 </p>
+        //                 <div className='flex flex-wrap gap-y-2 gap-x-2 justify-between'>
+        //                   {part?.map((item, idx) => {
+        //                     productCounter += 1; // Increment the counter for each product
+        //                     return (
+        //                       <div
+        //                         className='flex items-center justify-center py-3 px-4 border border-purple-600 rounded hover:cursor-pointer hover:bg-purple-100'
+        //                         key={idx}
+        //                         onClick={() =>
+        //                           handleChooseService(partsChainList, index)
+        //                         }
+        //                       >
+        //                         <div className='flex items-center justify-center flex-col'>
+        //                           {/* Use the persistent counter for numbering */}
+        //                           <p className='font-semibold'>
+        //                             Product {productCounter}
+        //                           </p>
+        //                           <p>{item}</p>
+        //                         </div>
+        //                       </div>
+        //                     );
+        //                   })}
+        //                 </div>
+        //               </div>
+        //             ))}
+        //           </div>
+        //         </CardContent>
+        //       )}
+        //     </Card>
+        //   )}
+        // </div>
       )}
     </main>
   );
