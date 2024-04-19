@@ -146,7 +146,7 @@ export default function ToolPage() {
   };
 
   const handleComposeByReputation = () => {
-    handleFindServicesChain();
+    handleFindServicesChainByReputation();
   };
 
   const handleFindServicesChain = async () => {
@@ -221,8 +221,9 @@ export default function ToolPage() {
       // console.log('Submission response: ', jsonData.webServiceChains);
       // const newArrays = getRandomSubsets(jsonData.paths, 20);
       if (jsonData.paths.length > 0) {
-        const groupedList = groupAndStagePaths(jsonData);
-        // console.log('log', groupedList);
+        let groupedList = groupAndStagePaths(jsonData);
+        groupedList = sortPartsByCost(groupedList);
+        console.log('log', groupedList);
         setPartsChainList(jsonData.paths);
         setGroupedPartsChainList(groupedList);
       } else {
@@ -234,6 +235,76 @@ export default function ToolPage() {
       setNoSolution(true);
     }
   };
+
+  const handleFindServicesChainByReputation = async () => {
+    // setPartsChain([]);
+    setNoSolution(false);
+    const listInitial = selectedInitialParameterList.map((item) => item.value);
+    const listGoal = selectedGoalParameterList.map((item) => item.value);
+    try {
+      const response = await fetch(
+        'http://localhost:8000/api/find-parts-chain-by-reputation/',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            initialParameters: listInitial,
+            goalParameters: listGoal,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorResponse = await response.text(); // Get the response text
+        throw new Error(errorResponse);
+      }
+
+      const jsonData = await response.json();
+      // console.log('Submission response: ', jsonData.webServiceChains);
+      // const newArrays = getRandomSubsets(jsonData.paths, 20);
+      if (jsonData.paths.length > 0) {
+        let groupedList = groupAndStagePaths(jsonData);
+        groupedList = sortPartsByReputation(groupedList);
+        console.log('log', groupedList);
+        setPartsChainList(jsonData.paths);
+        setGroupedPartsChainList(groupedList);
+      } else {
+        setNoSolution(true);
+      }
+      // setPartsChain(jsonData.webServiceChain);
+    } catch (error) {
+      console.error('Error submitting selection: ', error);
+      setNoSolution(true);
+    }
+  };
+
+  function sortPartsByCost(data) {
+    // Iterate through each stage in the data
+    Object.values(data).forEach((groups) => {
+      // Iterate through each group in the stage
+      groups.forEach((group) => {
+        // Sort the parts array by partCost in ascending order
+        group.parts.sort((a, b) => a.partCost - b.partCost);
+      });
+    });
+
+    return data;
+  }
+
+  function sortPartsByReputation(data) {
+    // Iterate through each stage in the data
+    Object.values(data).forEach((groups) => {
+      // Iterate through each group in the stage
+      groups.forEach((group) => {
+        // Sort the parts array by partCost in ascending order
+        group.parts.sort((a, b) => b.partReputation - a.partReputation);
+      });
+    });
+
+    return data;
+  }
 
   const handleChooseService = (parts, item) => {
     // console.log(parts, item);

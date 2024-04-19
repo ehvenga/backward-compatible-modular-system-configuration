@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -11,24 +9,21 @@ import {
 } from '@/components/ui/select';
 
 const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
-  // Initialize the selected parts state to manage each group's selected part
   const [selectedParts, setSelectedParts] = useState({});
 
-  // Set default selected values after groupedPartsChainList is loaded
   useEffect(() => {
     if (Object.keys(groupedPartsChainList).length) {
       const initialSelectedParts = {};
       Object.entries(groupedPartsChainList).forEach(([stage, groups]) => {
         groups.forEach((group, index) => {
           const key = `${stage}-${index}`;
-          initialSelectedParts[key] = group.parts[0].partId.toString(); // Set to the first part's partId
+          initialSelectedParts[key] = group.parts[0].partId.toString();
         });
       });
       setSelectedParts(initialSelectedParts);
     }
   }, [groupedPartsChainList]);
 
-  // Handle selection changes for individual select components
   const handleValueChange = (key, value) => {
     setSelectedParts((prev) => ({
       ...prev,
@@ -41,9 +36,48 @@ const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
     return item ? item.label : null;
   };
 
+  const getPartCost = (parts, selectedPartId) => {
+    const part = parts.find(
+      (part) => part.partId.toString() === selectedPartId
+    );
+    return part ? part.partCost : '0';
+  };
+
+  const getPartReputation = (parts, selectedPartId) => {
+    const part = parts.find(
+      (part) => part.partId.toString() === selectedPartId
+    );
+    return part ? part.partReputation : '0';
+  };
+
+  const calculateTotalCost = () => {
+    return Object.entries(selectedParts).reduce((total, [key, partId]) => {
+      const [stage, index] = key.split('-');
+      const group = groupedPartsChainList[stage][index];
+      const part = group.parts.find(
+        (part) => part.partId.toString() === partId
+      );
+      return total + (part ? parseFloat(part.partCost) : 0);
+    }, 0);
+  };
+
+  const calculateTotalReputation = () => {
+    return Object.entries(selectedParts).reduce((total, [key, partId]) => {
+      const [stage, index] = key.split('-');
+      const group = groupedPartsChainList[stage][index];
+      const part = group.parts.find(
+        (part) => part.partId.toString() === partId
+      );
+      return total + (part ? parseFloat(part.partReputation) : 0);
+    }, 0);
+  };
+
   if (Object.keys(groupedPartsChainList).length === 0) {
     return <div></div>;
   }
+
+  const totalCost = calculateTotalCost();
+  const totalReputation = calculateTotalReputation();
 
   return (
     <div>
@@ -56,7 +90,9 @@ const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
         <CardContent>
           {Object.entries(groupedPartsChainList).map(([stage, groups]) => (
             <div className='flex gap-x-5 w-full items-center' key={stage}>
-              <h2 className='font-semibold w-24'>Stage {Number(stage) + 1}</h2>
+              <h2 className='font-semibold w-24 text-lg'>
+                Stage {Number(stage) + 1}
+              </h2>
 
               <div className='flex flex-wrap gap-y-3 gap-x-5 border-2 border-purple-300 px-4 py-3 rounded w-full'>
                 {groups.map((group, index) => {
@@ -78,7 +114,7 @@ const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
                             handleValueChange(key, value)
                           }
                           value={selectedParts[key]}
-                          defaultValue={group.parts[0].partId.toString()} // Ensure default value is set
+                          defaultValue={group.parts[0].partId.toString()}
                         >
                           <SelectTrigger className='w-[520px] text-lg'>
                             <SelectValue />
@@ -94,6 +130,19 @@ const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {totalCost ? (
+                          <span className='font-medium text-sm pl-1'>
+                            Cost: $
+                            {getPartCost(group.parts, selectedParts[key])}
+                          </span>
+                        ) : totalReputation ? (
+                          <span className='font-medium text-sm pl-1'>
+                            Reputation Points:{' '}
+                            {getPartReputation(group.parts, selectedParts[key])}
+                          </span>
+                        ) : (
+                          <></>
+                        )}
                       </div>
                     </div>
                   );
@@ -101,6 +150,17 @@ const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
               </div>
             </div>
           ))}
+          {totalCost ? (
+            <div className='mt-4 pl-28 font-semibold'>
+              <span>Total Cost: ${totalCost.toFixed(2)}</span>
+            </div>
+          ) : totalReputation ? (
+            <div className='mt-4 pl-28 font-semibold'>
+              <span>Total Reputation Points: {totalReputation.toFixed()}</span>
+            </div>
+          ) : (
+            <></>
+          )}
         </CardContent>
       </Card>
     </div>
