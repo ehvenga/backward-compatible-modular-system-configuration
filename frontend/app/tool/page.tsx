@@ -28,8 +28,10 @@ export default function ToolPage() {
   const [groupedPartsChainList, setGroupedPartsChainList] = useState([]);
   const [noSolution, setNoSolution] = useState(false);
   const [submitDisabled, setSubmitDisabled] = useState(false);
-
-  const [showPartsOptions, setShowPartsOptions] = useState(false);
+  const [leastCost, setLeastCost] = useState(null);
+  const [highestRep, setHighestRep] = useState(null);
+  const [totalCostsList, setTotalCostsList] = useState(null);
+  const [avgRepList, setAvgRepList] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -179,13 +181,27 @@ export default function ToolPage() {
       // const newArrays = getRandomSubsets(jsonData.paths, 20);
       if (jsonData.paths.length > 0) {
         const groupedList = groupAndStagePaths(jsonData);
-        // console.log('log', groupedList);
         setPartsChainList(jsonData.paths);
         setGroupedPartsChainList(groupedList);
       } else {
         setNoSolution(true);
       }
-      // setPartsChain(jsonData.webServiceChain);
+
+      const totalCosts = jsonData.paths_with_cost.map((path) => path.totalCost);
+      const leastCostPath = jsonData.paths_with_cost.reduce((min, path) =>
+        min.totalCost < path.totalCost ? min : path
+      );
+      setLeastCost(leastCostPath.totalCost);
+      setTotalCostsList(totalCosts.sort());
+
+      const avgReps = jsonData.paths_with_rep.map(
+        (path) => path.averageReputation
+      );
+      const highestRepPath = jsonData.paths_with_rep.reduce((max, path) =>
+        max.averageReputation > path.averageReputation ? max : path
+      );
+      setHighestRep(highestRepPath.averageReputation);
+      setAvgRepList(avgReps.sort());
     } catch (error) {
       console.error('Error submitting selection: ', error);
       setNoSolution(true);
@@ -534,27 +550,11 @@ export default function ToolPage() {
           <div className='w-full flex gap-6'>
             <Button
               variant='outline'
-              className='w-60 disabled:bg-opacity-20 text-md'
+              className='w-80 disabled:bg-opacity-20 text-md'
               onClick={handleCompose}
               disabled={submitDisabled}
             >
-              Compose
-            </Button>
-            <Button
-              variant='outline'
-              className='w-60 disabled:bg-opacity-20 text-md'
-              onClick={handleComposeByPrice}
-              disabled={submitDisabled}
-            >
-              Compose by Price
-            </Button>
-            <Button
-              variant='outline'
-              className='w-60 disabled:bg-opacity-20 text-md'
-              onClick={handleComposeByReputation}
-              disabled={submitDisabled}
-            >
-              Compose by Reputation
+              Compose Solution
             </Button>
           </div>
         </CardContent>
@@ -575,69 +575,13 @@ export default function ToolPage() {
           <PartsDisplay
             groupedPartsChainList={groupedPartsChainList}
             parameterList={parameterList}
+            totalCostsList={totalCostsList}
+            avgRepList={avgRepList}
           />
           {/* {groupedPartsChainList.map((chain, index) => (
             <>{console.log(index)}</>
           ))} */}
         </div>
-
-        // <div>
-        //   {partsChainList?.length > 0 && (
-        //     <Card className='mt-6 relative bg-white shadow-lg sm:rounded-3xl p-6 bg-clip-padding bg-opacity-80 border border-gray-100'>
-        //       <CardHeader>
-        //         <CardTitle className='pb-2 text-2xl border-b border-slate-400'>
-        //           Solution
-        //         </CardTitle>
-        //       </CardHeader>
-
-        //       {/* <CardContent className='flex flex-col'>
-        //       <h2 className='font-medium text-xl w-full'>
-        //         Parameters Solution
-        //       </h2>
-        //     </CardContent> */}
-
-        //       {groupedPartsChainList?.length > 0 && (
-        //         <CardContent className='flex flex-col gap-4 w-full'>
-        //           <h2 className='font-medium text-xl w-full'>Parts Solution</h2>
-        //           <div className='flex items-center gap-4 w-full flex-col'>
-        //             {groupedPartsChainList.map((part, index) => (
-        //               <div
-        //                 className='flex w-full border border-purple-800 p-4 rounded'
-        //                 key={index}
-        //               >
-        //                 <p className='mr-10 w-40 font-medium my-5'>
-        //                   Stage {index + 1}
-        //                 </p>
-        //                 <div className='flex flex-wrap gap-y-2 gap-x-2 justify-between'>
-        //                   {part?.map((item, idx) => {
-        //                     productCounter += 1; // Increment the counter for each product
-        //                     return (
-        //                       <div
-        //                         className='flex items-center justify-center py-3 px-4 border border-purple-600 rounded hover:cursor-pointer hover:bg-purple-100'
-        //                         key={idx}
-        //                         onClick={() =>
-        //                           handleChooseService(partsChainList, index)
-        //                         }
-        //                       >
-        //                         <div className='flex items-center justify-center flex-col'>
-        //                           {/* Use the persistent counter for numbering */}
-        //                           <p className='font-semibold'>
-        //                             Product {productCounter}
-        //                           </p>
-        //                           <p>{item}</p>
-        //                         </div>
-        //                       </div>
-        //                     );
-        //                   })}
-        //                 </div>
-        //               </div>
-        //             ))}
-        //           </div>
-        //         </CardContent>
-        //       )}
-        //     </Card>
-        //   )}
-        // </div>
       )}
     </main>
   );

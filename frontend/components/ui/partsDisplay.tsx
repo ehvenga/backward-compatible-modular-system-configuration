@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -8,8 +8,46 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
+const PartsDisplay = ({
+  groupedPartsChainList,
+  parameterList,
+  totalCostsList,
+  avgRepList,
+}) => {
   const [selectedParts, setSelectedParts] = useState({});
+  const [totalCost, setTotalCost] = useState(0);
+  const [totalReputation, setTotalReputation] = useState(0);
+  const [averageReputation, setAverageReputation] = useState(0);
+
+  const firstValidValue = useMemo(() => {
+    if (!Array.isArray(totalCostsList)) {
+      // If totalCostsList is not an array, return null
+      return null;
+    }
+    const validValues = totalCostsList.filter((value) => value > 10);
+    return validValues.length > 0 ? Math.min(...validValues) : null;
+  }, [totalCostsList]);
+
+  const colorStyle = useMemo(() => {
+    if (!firstValidValue || totalCost < firstValidValue) {
+      // Keep color black if no valid value or totalCost is below the first valid value
+      return { color: 'black' };
+    }
+
+    // Adjusting the color components
+    const maxCost = Math.max(...totalCostsList);
+    const ratio = (totalCost - firstValidValue) / (maxCost - firstValidValue);
+    const red = Math.min(255, Math.floor(255 * ratio));
+    const green = Math.max(0, Math.floor(255 * (1 - ratio)));
+    const blue = 50; // A fixed amount of blue to soften the color
+
+    // Modifying color brightness by adding black
+    const adjustBrightness = 0.75; // Reduce overall brightness to 75%
+    const darkerRed = Math.floor(red * adjustBrightness);
+    const darkerGreen = Math.floor(green * adjustBrightness);
+
+    return { color: `rgb(${darkerRed},${darkerGreen},${blue})` };
+  }, [totalCost, totalCostsList, firstValidValue]);
 
   useEffect(() => {
     if (Object.keys(groupedPartsChainList).length) {
@@ -23,6 +61,12 @@ const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
       setSelectedParts(initialSelectedParts);
     }
   }, [groupedPartsChainList]);
+
+  useEffect(() => {
+    setTotalCost(calculateTotalCost());
+    setTotalReputation(calculateTotalReputation());
+    setAverageReputation(calculateAverageReputation());
+  }, [selectedParts, groupedPartsChainList]);
 
   const handleValueChange = (key, value) => {
     setSelectedParts((prev) => ({
@@ -64,20 +108,55 @@ const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
   const calculateTotalReputation = () => {
     return Object.entries(selectedParts).reduce((total, [key, partId]) => {
       const [stage, index] = key.split('-');
-      const group = groupedPartsChainList[stage][index];
-      const part = group.parts.find(
-        (part) => part.partId.toString() === partId
-      );
-      return total + (part ? parseFloat(part.partReputation) : 0);
+      if (
+        groupedPartsChainList &&
+        groupedPartsChainList[stage] &&
+        groupedPartsChainList[stage][index]
+      ) {
+        const group = groupedPartsChainList[stage][index];
+        const part = group.parts.find(
+          (part) => part.partId.toString() === partId
+        );
+        return total + (part ? parseFloat(part.partReputation) : 0);
+      }
     }, 0);
+  };
+
+  const calculateAverageReputation = () => {
+    const result = Object.entries(selectedParts).reduce(
+      (acc, [key, partId]) => {
+        const [stage, index] = key.split('-');
+        if (
+          groupedPartsChainList &&
+          groupedPartsChainList[stage] &&
+          groupedPartsChainList[stage][index]
+        ) {
+          const group = groupedPartsChainList[stage][index];
+          const part = group.parts.find(
+            (part) => part.partId.toString() === partId
+          );
+
+          // If part is found and has a valid reputation, add it to the total
+          if (part) {
+            const reputation = parseFloat(part.partReputation);
+            if (!isNaN(reputation)) {
+              acc.total += reputation;
+              acc.count += 1;
+            }
+          }
+        }
+        return acc;
+      },
+      { total: 0, count: 0 }
+    );
+
+    // Calculate average: check if count is not zero to avoid division by zero
+    return result.count > 0 ? result.total / result.count : 0;
   };
 
   if (Object.keys(groupedPartsChainList).length === 0) {
     return <div></div>;
   }
-
-  const totalCost = calculateTotalCost();
-  const totalReputation = calculateTotalReputation();
 
   return (
     <div>
@@ -87,14 +166,14 @@ const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
             Solution
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className='flex flex-wrap gap-y-4'>
           {Object.entries(groupedPartsChainList).map(([stage, groups]) => (
             <div className='flex gap-x-5 w-full items-center' key={stage}>
               <h2 className='font-semibold w-24 text-lg'>
                 Stage {Number(stage) + 1}
               </h2>
 
-              <div className='flex flex-wrap gap-y-3 gap-x-5 border-2 border-purple-300 px-4 py-3 rounded w-full'>
+              <div className='flex flex-wrap gap-y-3 gap-x-5 border-2 border-purple-300 px-4 py-3 rounded w-full justify-between'>
                 {groups.map((group, index) => {
                   const key = `${stage}-${index}`;
                   return (
@@ -116,10 +195,13 @@ const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
                           value={selectedParts[key]}
                           defaultValue={group.parts[0].partId.toString()}
                         >
-                          <SelectTrigger className='w-[520px] text-lg'>
+                          <SelectTrigger className='w-[570px] text-lg'>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem key='none' value='none'>
+                              None
+                            </SelectItem>
                             {group.parts.map((part) => (
                               <SelectItem
                                 key={part.partId}
@@ -130,19 +212,21 @@ const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
                             ))}
                           </SelectContent>
                         </Select>
-                        {totalCost ? (
-                          <span className='font-medium text-sm pl-1'>
+                        <div className='flex gap-x-3 font-medium text-sm ml-1 mt-0.5'>
+                          <span>
                             Cost: $
                             {getPartCost(group.parts, selectedParts[key])}
                           </span>
-                        ) : totalReputation ? (
-                          <span className='font-medium text-sm pl-1'>
+                          <span>
                             Reputation Points:{' '}
                             {getPartReputation(group.parts, selectedParts[key])}
                           </span>
+                        </div>
+                        {/* {totalCost ? (
+                        ) : totalReputation ? (
                         ) : (
                           <></>
-                        )}
+                        )} */}
                       </div>
                     </div>
                   );
@@ -150,17 +234,24 @@ const PartsDisplay = ({ groupedPartsChainList, parameterList }) => {
               </div>
             </div>
           ))}
-          {totalCost ? (
+          <div className='mt-4 pl-28 font-semibold flex gap-x-8'>
+            <span>
+              Total Cost:{' '}
+              <span style={colorStyle}> ${totalCost.toFixed(2)}</span>
+            </span>
+            <span>
+              Average Reputation Points: {averageReputation.toFixed(2)}
+            </span>
+          </div>
+          {/* {totalCost ? (
             <div className='mt-4 pl-28 font-semibold'>
-              <span>Total Cost: ${totalCost.toFixed(2)}</span>
             </div>
           ) : totalReputation ? (
             <div className='mt-4 pl-28 font-semibold'>
-              <span>Total Reputation Points: {totalReputation.toFixed()}</span>
             </div>
           ) : (
             <></>
-          )}
+          )} */}
         </CardContent>
       </Card>
     </div>
