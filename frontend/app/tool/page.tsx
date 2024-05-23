@@ -554,7 +554,7 @@ export default function ToolPage() {
               onClick={handleCompose}
               disabled={submitDisabled}
             >
-              Compose Solution
+              Configure Systems
             </Button>
           </div>
         </CardContent>
