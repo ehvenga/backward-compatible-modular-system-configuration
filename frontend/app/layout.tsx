@@ -7,8 +7,8 @@ import { BackgroundGradientAnimation } from '@/components/ui/background-gradient
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Modular System Configuration',
-  description: 'IOEM Submission',
+  title: 'Interactive Modular System Configuration',
+  description: 'IOEM Washington DC 2024 Poster Submission',
 };
 
 export default function RootLayout({

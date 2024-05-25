@@ -21,18 +21,10 @@ const Navbar = () => {
       <ul className='flex gap-x-6 text-xl'>
         <li>
           <Link
-            href='/tool'
+            href='/details'
             className='font-medium text-purple-700 cursor-pointer hover:text-purple-800 border-b border-transparent hover:border-b hover:border-purple-700'
           >
-            Tool
-          </Link>
-        </li>
-        <li>
-          <Link
-            href='/paper'
-            className='font-medium text-purple-700 cursor-pointer hover:text-purple-800 border-b border-transparent hover:border-b hover:border-purple-700'
-          >
-            Paper
+            Details
           </Link>
         </li>
         <li>
