@@ -50,6 +50,7 @@ const PartsDisplay = ({
   }, [totalCost, totalCostsList, firstValidValue]);
 
   useEffect(() => {
+    console.log('grp', groupedPartsChainList);
     if (Object.keys(groupedPartsChainList).length) {
       const initialSelectedParts = {};
       Object.entries(groupedPartsChainList).forEach(([stage, groups]) => {

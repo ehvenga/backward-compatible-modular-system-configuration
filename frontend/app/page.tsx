@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import PartsDisplay from '@/components/ui/partsDisplay';
+import PartsChainDisplay from '@/components/ui/partsChainDisplay';
 
 export default function Home() {
   const [parameterList, setParameterList] = useState([]);
@@ -16,6 +17,8 @@ export default function Home() {
   const [selectedGoalFunctionList, setSelectedGoalFunctionList] = useState([]);
   const [partsChainList, setPartsChainList] = useState([]);
   const [groupedPartsChainList, setGroupedPartsChainList] = useState([]);
+  const [stagedPartsChainList, setStagedPartsChainList] = useState([]);
+  const [stagedPartsChainListBC, setStagedPartsChainListBC] = useState([]);
   const [noSolution, setNoSolution] = useState(false);
   const [submitDisabled, setSubmitDisabled] = useState(false);
   const [leastCost, setLeastCost] = useState(null);
@@ -142,24 +145,78 @@ export default function Home() {
   };
 
   const handleCompose = () => {
-    handleFindServicesChain();
+    handleFindServicesChainByFunction();
   };
 
-  const handleFindServicesChain = async () => {
+  // const handleFindServicesChain = async () => {
+  //   setNoSolution(false);
+  //   const listInitial = selectedInitialParameterList.map((item) => item.value);
+  //   const listGoal = selectedGoalFunctionList.map((item) => item.value);
+  //   try {
+  //     const response = await fetch(
+  //       'http://localhost:8000/api/find-parts-chain/',
+  //       {
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         },
+  //         body: JSON.stringify({
+  //           initialParameters: listInitial,
+  //           goalParameters: listGoal,
+  //         }),
+  //       }
+  //     );
+
+  //     if (!response.ok) {
+  //       const errorResponse = await response.text();
+  //       throw new Error(errorResponse);
+  //     }
+
+  //     const jsonData = await response.json();
+  //     if (jsonData.paths.length > 0) {
+  //       const groupedList = groupAndStagePaths(jsonData);
+  //       setPartsChainList(jsonData.paths);
+  //       setGroupedPartsChainList(groupedList);
+  //     } else {
+  //       setNoSolution(true);
+  //     }
+
+  //     const totalCosts = jsonData.paths_with_cost.map((path) => path.totalCost);
+  //     const leastCostPath = jsonData.paths_with_cost.reduce((min, path) =>
+  //       min.totalCost < path.totalCost ? min : path
+  //     );
+  //     setLeastCost(leastCostPath.totalCost);
+  //     setTotalCostsList(totalCosts.sort());
+
+  //     const avgReps = jsonData.paths_with_rep.map(
+  //       (path) => path.averageReputation
+  //     );
+  //     const highestRepPath = jsonData.paths_with_rep.reduce((max, path) =>
+  //       max.averageReputation > path.averageReputation ? max : path
+  //     );
+  //     setHighestRep(highestRepPath.averageReputation);
+  //     setAvgRepList(avgReps.sort());
+  //   } catch (error) {
+  //     console.error('Error submitting selection: ', error);
+  //     setNoSolution(true);
+  //   }
+  // };
+
+  const handleFindServicesChainByFunction = async () => {
     setNoSolution(false);
     const listInitial = selectedInitialParameterList.map((item) => item.value);
     const listGoal = selectedGoalFunctionList.map((item) => item.value);
     try {
       const response = await fetch(
-        'http://localhost:8000/api/find-parts-chain/',
+        'http://localhost:8000/api/find-parts-chain-by-function/',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            initialParameters: listInitial,
-            goalParameters: listGoal,
+            input_parameters: listInitial,
+            goal_functions: listGoal,
           }),
         }
       );
@@ -172,110 +229,147 @@ export default function Home() {
       const jsonData = await response.json();
       if (jsonData.paths.length > 0) {
         const groupedList = groupAndStagePaths(jsonData);
+        const stagedList = stagePaths(jsonData.paths);
+        const stagedListBC = stagePaths(jsonData.paths_with_bc);
+        setStagedPartsChainList(stagedList);
+        setStagedPartsChainListBC(stagedListBC);
         setPartsChainList(jsonData.paths);
         setGroupedPartsChainList(groupedList);
       } else {
         setNoSolution(true);
       }
 
-      const totalCosts = jsonData.paths_with_cost.map((path) => path.totalCost);
-      const leastCostPath = jsonData.paths_with_cost.reduce((min, path) =>
-        min.totalCost < path.totalCost ? min : path
-      );
-      setLeastCost(leastCostPath.totalCost);
-      setTotalCostsList(totalCosts.sort());
+      // const totalCosts = jsonData.paths_with_cost.map((path) => path.totalCost);
+      // const leastCostPath = jsonData.paths_with_cost.reduce((min, path) =>
+      //   min.totalCost < path.totalCost ? min : path
+      // );
+      // setLeastCost(leastCostPath.totalCost);
+      // setTotalCostsList(totalCosts.sort());
 
-      const avgReps = jsonData.paths_with_rep.map(
-        (path) => path.averageReputation
-      );
-      const highestRepPath = jsonData.paths_with_rep.reduce((max, path) =>
-        max.averageReputation > path.averageReputation ? max : path
-      );
-      setHighestRep(highestRepPath.averageReputation);
-      setAvgRepList(avgReps.sort());
+      // const avgReps = jsonData.paths_with_rep.map(
+      //   (path) => path.averageReputation
+      // );
+      // const highestRepPath = jsonData.paths_with_rep.reduce((max, path) =>
+      //   max.averageReputation > path.averageReputation ? max : path
+      // );
+      // setHighestRep(highestRepPath.averageReputation);
+      // setAvgRepList(avgReps.sort());
     } catch (error) {
       console.error('Error submitting selection: ', error);
       setNoSolution(true);
     }
   };
 
-  const handleFindServicesChainByPrice = async () => {
-    setNoSolution(false);
-    const listInitial = selectedInitialParameterList.map((item) => item.value);
-    const listGoal = selectedGoalFunctionList.map((item) => item.value);
-    try {
-      const response = await fetch(
-        'http://localhost:8000/api/find-parts-chain-by-price/',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            initialParameters: listInitial,
-            goalParameters: listGoal,
-          }),
-        }
-      );
+  const stagePaths = (data) => {
+    const groupedPaths = {};
 
-      if (!response.ok) {
-        const errorResponse = await response.text();
-        throw new Error(errorResponse);
+    data.forEach((path) => {
+      const key = JSON.stringify(path.parameters.sort());
+      if (!groupedPaths[key]) {
+        groupedPaths[key] = [];
       }
+      groupedPaths[key].push(path.parts);
+    });
 
-      const jsonData = await response.json();
-      if (jsonData.paths.length > 0) {
-        let groupedList = groupAndStagePaths(jsonData);
-        groupedList = sortPartsByCost(groupedList);
-        setPartsChainList(jsonData.paths);
-        setGroupedPartsChainList(groupedList);
-      } else {
-        setNoSolution(true);
-      }
-    } catch (error) {
-      console.error('Error submitting selection: ', error);
-      setNoSolution(true);
-    }
+    const stagedGroups = Object.values(groupedPaths).map((group) => {
+      const stages = [];
+      group.forEach((parts) => {
+        parts.forEach((part, index) => {
+          if (!stages[index]) {
+            stages[index] = [];
+          }
+          const partExists = stages[index].some(
+            (existingPart) => existingPart.partId === part.partId
+          );
+          if (!partExists) {
+            stages[index].push(part);
+          }
+        });
+      });
+      return stages;
+    });
+
+    console.log('stagedPaths', stagedGroups);
+    return stagedGroups;
   };
 
-  const handleFindServicesChainByReputation = async () => {
-    setNoSolution(false);
-    const listInitial = selectedInitialParameterList.map((item) => item.value);
-    const listGoal = selectedGoalFunctionList.map((item) => item.value);
-    try {
-      const response = await fetch(
-        'http://localhost:8000/api/find-parts-chain-by-reputation/',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            initialParameters: listInitial,
-            goalParameters: listGoal,
-          }),
-        }
-      );
+  // const handleFindServicesChainByPrice = async () => {
+  //   setNoSolution(false);
+  //   const listInitial = selectedInitialParameterList.map((item) => item.value);
+  //   const listGoal = selectedGoalFunctionList.map((item) => item.value);
+  //   try {
+  //     const response = await fetch(
+  //       'http://localhost:8000/api/find-parts-chain-by-price/',
+  //       {
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         },
+  //         body: JSON.stringify({
+  //           initialParameters: listInitial,
+  //           goalParameters: listGoal,
+  //         }),
+  //       }
+  //     );
 
-      if (!response.ok) {
-        const errorResponse = await response.text();
-        throw new Error(errorResponse);
-      }
+  //     if (!response.ok) {
+  //       const errorResponse = await response.text();
+  //       throw new Error(errorResponse);
+  //     }
 
-      const jsonData = await response.json();
-      if (jsonData.paths.length > 0) {
-        let groupedList = groupAndStagePaths(jsonData);
-        groupedList = sortPartsByReputation(groupedList);
-        setPartsChainList(jsonData.paths);
-        setGroupedPartsChainList(groupedList);
-      } else {
-        setNoSolution(true);
-      }
-    } catch (error) {
-      console.error('Error submitting selection: ', error);
-      setNoSolution(true);
-    }
-  };
+  //     const jsonData = await response.json();
+  //     if (jsonData.paths.length > 0) {
+  //       let groupedList = groupAndStagePaths(jsonData);
+  //       groupedList = sortPartsByCost(groupedList);
+  //       setPartsChainList(jsonData.paths);
+  //       setGroupedPartsChainList(groupedList);
+  //     } else {
+  //       setNoSolution(true);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error submitting selection: ', error);
+  //     setNoSolution(true);
+  //   }
+  // };
+
+  // const handleFindServicesChainByReputation = async () => {
+  //   setNoSolution(false);
+  //   const listInitial = selectedInitialParameterList.map((item) => item.value);
+  //   const listGoal = selectedGoalFunctionList.map((item) => item.value);
+  //   try {
+  //     const response = await fetch(
+  //       'http://localhost:8000/api/find-parts-chain-by-reputation/',
+  //       {
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         },
+  //         body: JSON.stringify({
+  //           initialParameters: listInitial,
+  //           goalParameters: listGoal,
+  //         }),
+  //       }
+  //     );
+
+  //     if (!response.ok) {
+  //       const errorResponse = await response.text();
+  //       throw new Error(errorResponse);
+  //     }
+
+  //     const jsonData = await response.json();
+  //     if (jsonData.paths.length > 0) {
+  //       let groupedList = groupAndStagePaths(jsonData);
+  //       groupedList = sortPartsByReputation(groupedList);
+  //       setPartsChainList(jsonData.paths);
+  //       setGroupedPartsChainList(groupedList);
+  //     } else {
+  //       setNoSolution(true);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error submitting selection: ', error);
+  //     setNoSolution(true);
+  //   }
+  // };
 
   function sortPartsByCost(data) {
     Object.values(data).forEach((groups) => {
@@ -480,12 +574,22 @@ export default function Home() {
           </AlertDescription>
         </Alert>
       ) : (
-        <PartsDisplay
-          groupedPartsChainList={groupedPartsChainList}
-          parameterList={parameterList}
-          totalCostsList={totalCostsList}
-          avgRepList={avgRepList}
-        />
+        <div>
+          <PartsChainDisplay
+            stagedPartsChainList={stagedPartsChainList}
+            BC={false}
+          />
+          <PartsChainDisplay
+            stagedPartsChainList={stagedPartsChainListBC}
+            BC={true}
+          />
+          {/* <PartsDisplay
+            groupedPartsChainList={groupedPartsChainList}
+            parameterList={parameterList}
+            totalCostsList={totalCostsList}
+            avgRepList={avgRepList}
+          /> */}
+        </div>
       )}
     </main>
   );
