@@ -145,6 +145,8 @@ export default function Home() {
   };
 
   const handleCompose = () => {
+    setStagedPartsChainList([]);
+    setStagedPartsChainListBC([]);
     handleFindServicesChainByFunction();
   };
 
